@@ -15,6 +15,9 @@
 	#define DEBUG(info)
 #endif
 
+void closeThreads();
+void init();
+
 #define PORT_NUMBER 10000
 #define SERVER_NAME "localhost"
 
@@ -23,6 +26,16 @@ pthread_t rThread;   //接收消息线程
 int sockfd;	//socket 描述符
 int portNum;
 
+//重启心跳和接收消息线程
+void resetTcp() {
+	closeThreads();
+	init();
+}
+
+// 处理tcp断开，重启两个线程 
+void handler() {
+	resetTcp();
+}
 
 //初始化
 void init() {
@@ -56,9 +69,27 @@ void init() {
 	ioctl(sockfd, FIONBIO, &iMode);  	
 }
 
+
+//心跳线程处理函数
+void *heart_break_function(void * ptr) {
+
+}
+
+//接收线程处理函数
+void *receive_function(void * ptr) {
+
+}
+
 //初始化心跳和接收消息线程
 void initThread(int sockfd) {
-
+    int ret1 = pthread_create(&hbThread, NULL, heart_break_function, (void*)(&sockfd));
+	if(ret1 != 0) {
+		DEBUG("heart break thread create is not ok");
+	}
+    int ret2 = pthread_create(&rThread, NULL, receive_function, (void*)(&sockfd));
+	if(ret2 != 0) {
+		DEBUG("heart break thread create is not ok");
+	}
 }
 
 //关闭心跳和接收消息线程
@@ -73,16 +104,5 @@ void closeThreads() {
 	if(0 != r) {
 		DEBUG("receive thread cancel is wrong\n");
 	}
-}
-
-//重启心跳和接收消息线程
-void resetTcp() {
-	closeThreads();
-	init();
-}
-
-// 处理tcp断开，重启两个线程 
-void handler() {
-	resetTcp();
 }
 

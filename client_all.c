@@ -37,7 +37,6 @@ void handler() {
 	resetTcp();
 }
 
-
 //初始化
 void init() {
     int  n;
@@ -70,9 +69,27 @@ void init() {
 	ioctl(sockfd, FIONBIO, &iMode);  	
 }
 
+
+//心跳线程处理函数
+void *heart_break_function(void * ptr) {
+
+}
+
+//接收线程处理函数
+void *receive_function(void * ptr) {
+
+}
+
 //初始化心跳和接收消息线程
 void initThread(int sockfd) {
-
+    int ret1 = pthread_create(&hbThread, NULL, heart_break_function, (void*)(&sockfd));
+	if(ret1 != 0) {
+		DEBUG("heart break thread create is not ok");
+	}
+    int ret2 = pthread_create(&rThread, NULL, receive_function, (void*)(&sockfd));
+	if(ret2 != 0) {
+		DEBUG("heart break thread create is not ok");
+	}
 }
 
 //关闭心跳和接收消息线程
