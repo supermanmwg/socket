@@ -23,7 +23,7 @@ void handler(int s) {
     printf("Caught SIGPIPE\n");
 	if(is_cancel == 0) {
 		printf("thread cancel is begin\n");
-		int s = pthread_cancel(thread1);
+ 		int s = pthread_cancel(thread1);
         if (s != 0) {
 		   	printf("thread cancel is wrong\n");
 		}
