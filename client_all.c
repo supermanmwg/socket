@@ -36,7 +36,7 @@ timer_t timerid; //定时器ID
 
 //重启心跳和接收消息线程
 void reset_tcp() {
-	closeThreads();
+	close_threads();
 	init();
 }
 
@@ -76,6 +76,8 @@ void init() {
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
         DEBUG("ERROR connecting\n");
 		exit(0);
+	} else {
+		DEBUG("connecting server: %s is successful\n", SERVER_NAME);
 	}
 	
 	//设置socket为非阻塞模式
@@ -88,12 +90,14 @@ void init() {
 
 //心跳线程处理函数
 void *heart_break_function(void * ptr) {
-
+	time_init();
 }
 
 //接收线程处理函数
 void *receive_function(void * ptr) {
-
+ 	while(1){
+		sleep(1);
+ 	}
 }
 
 //初始化心跳和接收消息线程
@@ -108,6 +112,9 @@ void init_threads() {
 		DEBUG("heart break thread create is not ok");
 		exit(0);
 	}
+
+    pthread_join(hbthread, NULL);
+    pthread_join(rthread, NULL); 
 }
 
 //关闭心跳和接收消息线程
@@ -128,7 +135,7 @@ void close_threads() {
 void time_handler(int sig, siginfo_t *si, void *uc)
 {
     if(si->si_value.sival_ptr == &timerid){
-	//
+	
     }
 }
 
@@ -160,6 +167,10 @@ void time_init() {
     sev.sigev_value.sival_ptr = &timerid;
     timer_create(CLOCKID, &sev, &timerid);
 	time_set(timerid, TIMER_INTERVAL, 0);
+}
+
+void main() {
+	init();
 }
 
 
