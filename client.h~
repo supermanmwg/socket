@@ -1,0 +1,3 @@
+void init();
+void init_threads();
+void close_threads();
