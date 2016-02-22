@@ -11,5 +11,5 @@ client_all:
 	gcc client_all.c -o client_all -g -lpthread -lrt
 
 clean:
-	rm server client timer
+	rm server client timer client_all
 

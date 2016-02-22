@@ -13,7 +13,7 @@
 
 #define __DEBUG
 #ifdef __DEBUG
-	#define DEBUG(format,...) printf("FILE: "__FILE__", LINE: %d: "format"/n", __LINE__, ##__VA_ARGS__)
+	#define DEBUG(format,...) printf("FILE: "__FILE__", LINE: %d: "format"", __LINE__, ##__VA_ARGS__)
 #else
 	#define DEBUG(info)
 #endif
@@ -23,10 +23,9 @@
 #define SERVER_NAME "101.200.203.52"
 
 //定时器配置
-#define TIMER_INTERVAL 10000
 #define CLOCKID CLOCK_REALTIME
 #define SIG SIGUSR1
-
+#define TIMER_INTERVAL 5
 
 pthread_t hbthread;  //心跳线程
 pthread_t rthread;   //接收消息线程
@@ -77,20 +76,22 @@ void init() {
         DEBUG("ERROR connecting\n");
 		exit(0);
 	} else {
-		DEBUG("connecting server: %s is successful\n", SERVER_NAME);
+		printf("connecting server: %s is successful\n", SERVER_NAME);
 	}
 	
 	//设置socket为非阻塞模式
 	int iMode = 1;
 	ioctl(sockfd, FIONBIO, &iMode);  	
 	
-	init_threads();
 }
 
 
 //心跳线程处理函数
 void *heart_break_function(void * ptr) {
 	time_init();
+	while(1) {
+		sleep(1);
+	}
 }
 
 //接收线程处理函数
@@ -114,7 +115,7 @@ void init_threads() {
 	}
 
     pthread_join(hbthread, NULL);
-    pthread_join(rthread2, NULL); 
+    pthread_join(rthread, NULL); 
 }
 
 //关闭心跳和接收消息线程
@@ -135,8 +136,9 @@ void close_threads() {
 void time_handler(int sig, siginfo_t *si, void *uc)
 {
     if(si->si_value.sival_ptr == &timerid){
-	
+		printf("timer handler is running\n");
     }
+
 }
 
 //定时器设定时间函数
@@ -156,7 +158,7 @@ void time_init() {
     sigset_t mask;
     struct sigaction sa;
 
-    printf("Establishing handler for signal %d\n", SIG);
+    DEBUG("Establishing handler for signal %d\n", SIG);
     sa.sa_flags = SA_SIGINFO;
     sa.sa_sigaction = time_handler;
     sigemptyset(&sa.sa_mask);
@@ -171,6 +173,7 @@ void time_init() {
 
 void main() {
 	init();
+	init_threads();
 }
 
 
