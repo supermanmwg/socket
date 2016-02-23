@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
+#include <string.h> 
+#include <sys/types.h> 
+#include <sys/socket.h> 
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <netdb.h> 
@@ -60,12 +60,16 @@ void init() {
     if (sockfd < 0) {
         DEBUG("ERROR opening socket\n");
 		exit(0);
+	} else {
+        DEBUG("RIGHT opening socket\n");
 	}
     server = gethostbyname(SERVER_NAME);
     if (server == NULL) {
         DEBUG("ERROR, no such host\n");
         exit(0);
-    }
+    } else {
+        DEBUG("RIGHT, have a  host\n");
+	}
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     bcopy((char *)server->h_addr, 
@@ -74,30 +78,45 @@ void init() {
     serv_addr.sin_port = htons(portnum);
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
         DEBUG("ERROR connecting\n");
-		exit(0);
+		//exit(0);
 	} else {
-		printf("connecting server: %s is successful\n", SERVER_NAME);
+		DEBUG("connecting server: %s is successful\n", SERVER_NAME);
+	}
+	
+	//建立连接
+    DEBUG("Build a connection\n");
+	bzero(buffer, 256);
+	n = read(sockfd, buffer, 255);
+	if(n > 0) {
+	 	short *sign = (short *)buffer;
+		printf("sign is %x \n",ntohs(sign[0]));
+		char *buf = buffer + sizeof(int);
+  		printf("Here is the %d message: %s\n", n - 4, buf);
 	}
 	
 	//设置socket为非阻塞模式
 	int iMode = 1;
 	ioctl(sockfd, FIONBIO, &iMode);  	
-	
 }
+
 
 
 //心跳线程处理函数
 void *heart_break_function(void * ptr) {
 	time_init();
-	while(1) {
-		sleep(1);
-	}
 }
 
 //接收线程处理函数
 void *receive_function(void * ptr) {
+   char buffer[256];
  	while(1){
-		sleep(1);
+   		bzero(buffer, 256);
+		int n = read(sockfd, buffer, 255);
+		if(n > 0) {
+			char *buf = buffer + sizeof(int);
+  			printf("Here is the %d message: %s\n", n, buf);
+		}
+		usleep(1000 * 10);
  	}
 }
 
@@ -137,6 +156,7 @@ void time_handler(int sig, siginfo_t *si, void *uc)
 {
     if(si->si_value.sival_ptr == &timerid){
 		printf("timer handler is running\n");
+		time_set(timerid, 0, 0);
     }
 }
 
@@ -172,8 +192,5 @@ void time_init() {
 
 void main() {
 	init();
-	init_threads();
+//	init_threads();
 }
-
-
-

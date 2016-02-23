@@ -1,4 +1,4 @@
-all:server client timer mthread client_all
+all:server client timer mthread client_all encry
 server: server.c
 	gcc server.c -o server -g
 client: client.c
@@ -9,7 +9,9 @@ mthread: mthread.c
 	gcc mthread.c -o mthread -g -lpthread
 client_all:
 	gcc client_all.c -o client_all -g -lpthread -lrt
+encry:
+	gcc md5.c encry.c -o encry
 
 clean:
-	rm server client timer client_all
+	rm server client timer client_all encry
 
