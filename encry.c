@@ -3,20 +3,6 @@
 #include <string.h>
 #include "md5.h"
 
-char *join1(char *a, char *b) {  
-	printf("a length is %d, b length is %d\n", strlen(a), strlen(b));
-    char *c = (char *) malloc(strlen(a) + 8 + 1); //局部变量，用malloc申请内存  
-    if (c == NULL) exit (1);  
-    char *tempc = c; //把首地址存下来  
-    while (*a != '\0') {  
-        *c++ = *a++;  
-    }  
-    while ((*c++ = *b++) != '\0') {  
-        ;  
-    }  
-    //注意，此时指针c已经指向拼接之后的字符串的结尾'\0' !  
-    return tempc;//返回值是局部malloc申请的指针变量，需在函数调用结束后free之  
-}  
 
 void Hex2Str(const char *sSrc, char *sDest, int nSrcLen )  
 {  
@@ -31,61 +17,25 @@ void Hex2Str(const char *sSrc, char *sDest, int nSrcLen )
     return ;  
 }  
 
-char* encode(char* key, char* encry) {
-	char salt[8];
-	unsigned char decrypt[16];    
-
-	memset(salt, 0, sizeof(salt));
-	GetSalt(salt, key, 0, 0);
-
-	char *temp = join1(encry, salt);
-	printf("before encry %s\n", temp);
-	MD5_CTX md5;
-	MD5Init(&md5);         		
-	MD5Update(&md5,temp,17);
-	MD5Final(&md5,decrypt);        
-	free(temp);
-	char *temp1 = (char *)malloc(sizeof(char) * 32);
-	Hex2Str(decrypt, temp1, 16);
-
-	return temp1;
-}
-
-
-int main(int argc, char *argv[])
-{
-/*
-	char key[32] = "srlxmsnrcwrlqhbblbymlfphuplmryxn";
-	unsigned char myencrypt[] = "12345";
-
-	char* afterEncrypt = encode(key, myencrypt);
-	printf("加密后:");
-	int i;
-	for(i = 0; i < 32; i++) {
-		printf("%c", afterEncrypt[i]);
-	}
-	printf("\n");
-*/
-	
+char* encode(char key[32], char str[12]) {
 	int i,j;
-	unsigned char encrypt[] = "12345smhcxufn";//21232f297a57a5a743894a0e4a801fc3
 	unsigned char decrypt[16];    
-
-	char key[32] = "srlxmsnrcwrlqhbblbymlfphuplmryxn";
 	char salt[8];
-
+	
 	memset(salt, 0, sizeof(salt));
 	GetSalt(salt, key, 0, 0);
 
 	for(j = 7; j >= 0; j--) {
 		printf("salt[%d]:%c\n", j, salt[j]);
 	}
-	unsigned char myencrypt[] = "12345";
-	char *temp = join1(myencrypt, salt);
+
+	char temp[20];
+	memcpy(temp, str, 12);
+	memcpy(temp+12, salt, 8);
 
 	MD5_CTX md5;
 	MD5Init(&md5);         		
-	MD5Update(&md5,temp,strlen((char *)temp));
+	MD5Update(&md5,temp,sizeof(temp));
 	MD5Final(&md5,decrypt);        
 	printf("加密前:%s\n加密后:",temp);
 	for(i=0;i<16;i++)
@@ -94,13 +44,87 @@ int main(int argc, char *argv[])
 	}
 	printf("\n");
 	
-	char *temp1 = (char *)malloc(sizeof(char) * 32);
+	char temp1[32];
 	Hex2Str(decrypt, temp1, 16);
 	printf("加密后:");
 	for(i = 0; i < 32; i++) {
 		printf("%c", temp1[i]);
 	}
 	printf("\n");
+	
+	static char encrypt[48];
+	unsigned short sign = htons(1);
+	unsigned short size = htons(44);
+	
+	memcpy(encrypt, &sign, 2);
+	memcpy(encrypt + 2, &size, 2);
+	memcpy(encrypt + 4,temp1, 32);
+	memcpy(encrypt + 36, str, 12);
+
+	return encrypt;
+}
+
+int main(int argc, char *argv[])
+{
+	char decryt[48];
+	
+	char key[32] = "srlxmsnrcwrlqhbblbymlfphuplmryxn";
+	char str[12] = "123456789012";
+	memcpy(decryt, encode(key, str), 48);
+
+	printf("2加密后:");
+	int i;
+	for(i = 0; i < 4; i++) {
+		printf("%02x ", decryt[i]);
+	}
+	printf("\n");
+
+	for(i = 0; i < 48; i++) {
+		printf("%c", decryt[i]);
+	}
+	printf("\n");
+/*
+	int i,j;
+	//unsigned char encrypt[] = "12345smhcxufn";//21232f297a57a5a743894a0e4a801fc3
+	unsigned char decrypt[16];    
+
+	char key[32] = "srlxmsnrcwrlqhbblbymlfphuplmryxn";
+	char salt[8];
+
+	char testArray[14];
+	char *test;
+	test = testArray;
+	printf("test size is %d\n", sizeof(test));
+	memset(salt, 0, sizeof(salt));
+	GetSalt(salt, key, 0, 0);
+
+	for(j = 7; j >= 0; j--) {
+		printf("salt[%d]:%c\n", j, salt[j]);
+	}
+	unsigned char myencrypt[] = "123456789012";
+	char temp[20];
+	memcpy(temp, myencrypt, 12);
+	memcpy(temp+12, salt, 8);
+
+	MD5_CTX md5;
+	MD5Init(&md5);         		
+	MD5Update(&md5,temp,sizeof(temp));
+	MD5Final(&md5,decrypt);        
+	printf("加密前:%s\n加密后:",temp);
+	for(i=0;i<16;i++)
+	{
+		printf("%02x",decrypt[i]);
+	}
+	printf("\n");
+	
+	char temp1[32];
+	Hex2Str(decrypt, temp1, 16);
+	printf("加密后:");
+	for(i = 0; i < 32; i++) {
+		printf("%c", temp1[i]);
+	}
+	printf("\n");
+*/
 	
 	return 0;
 

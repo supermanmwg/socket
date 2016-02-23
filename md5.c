@@ -164,7 +164,6 @@ void MD5Transform(unsigned int state[4],unsigned char block[64])
 void GetSalt(char salt[8], char key[32], int n, int length) 
 {
 	n = n % 32;
-	printf("key length is %d\n", sizeof(key));
 	salt[length] = key[n];
 	length++;
 	if(8 == length) {
