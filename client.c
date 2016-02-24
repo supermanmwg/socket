@@ -8,7 +8,7 @@
 #include <netdb.h> 
 #include <signal.h>
 
-//init a thread
+//init the thread
 pthread_t thread1;
 int is_cancel = 0;
 
