@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -7,6 +6,8 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
+#include <signal.h>
+#include <errno.h>
 
 #define DEBUG_BUILD
 #ifdef DEBUG_BUILD
@@ -25,10 +26,11 @@ void SetSendData(char * random_c) {
     int i;
     char temp[5] = "12345";
 
-    memcpy(random_c, &sign, 2);
-    memcpy(random_c + 2, &size, 2);
-    memcpy(random_c + 4, temp, 5);
-
+	for(i = 0; i < 9; i++) {
+    	memcpy(random_c + 9 * i, &sign, 2);
+    	memcpy(random_c + 2 + 9 * i, &size, 2);
+    	memcpy(random_c + 4 + 9 * i, temp, 5);
+	}
 }
 
 void main(int argc, char *argv[])
@@ -36,6 +38,9 @@ void main(int argc, char *argv[])
     int sock_fd, newsock_fd, portno, pid;
     socklen_t clilen;
     struct sockaddr_in serv_addr, cli_addr;
+
+    //忽略EPIPE,使程序收到SIGPIPE不退出
+    signal(SIGPIPE, SIG_IGN);
 
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -59,20 +64,28 @@ void main(int argc, char *argv[])
 
     listen(sock_fd,5);
     clilen = sizeof(cli_addr);
-    newsock_fd = accept(sock_fd, (struct sockaddr *) &cli_addr, &clilen);
-    if(newsock_fd < 0) {
-        debug("连接客户端失败!\n");
-    } else {
-        debug("连接客户端成功!\n");
-    }
-    //设置非阻塞模式
-    int iMode = 1;
-    ioctl(newsock_fd, FIONBIO, &iMode);
-    char send_char[10];
-    while(1) {
-        SetSendData(send_char);
-        write(newsock_fd, send_char, 9);
-        sleep(SEND_DATA_INTERVAL);
-    }
-    close(sock_fd);
+	while(1) {
+    	newsock_fd = accept(sock_fd, (struct sockaddr *) &cli_addr, &clilen);
+    	if(newsock_fd < 0) {
+        	debug("连接客户端失败!\n");
+    	} else {
+        	debug("连接客户端成功!\n");
+    	}
+    	char send_char[10*9 + 1];
+		send_char[90] = '\0';
+    	while(1) {
+        	SetSendData(send_char);
+        	int n = write(newsock_fd, send_char, 90);
+			if (n < 0) {
+            	int i = errno;
+            	debug("客户端线程出错，需重新建立连接！ sockfd is %d, errno is %d, %s\n", sock_fd, i, strerror(i));
+            	break;
+        	} else {
+            	debug("发送心跳消息%s\n", (send_char + 4));
+        	}
+        	sleep(SEND_DATA_INTERVAL);
+    	}
+
+    	close(newsock_fd);
+	}
 }

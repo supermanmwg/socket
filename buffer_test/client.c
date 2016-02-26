@@ -36,7 +36,7 @@ typedef struct message_buffer {
 //消息处理线程配置
 #define MESSAGE_PROCESS_BUFFER_SIZE (1024 * 1024)
 #define MESSAGE_PROCESS_DATA_SIZE (64 * 1024)
-#define MESSAGE_PROCESS_INTERVAL (100 * 1000)  //消息处理轮询时间（以微秒计算）
+#define MESSAGE_PROCESS_INTERVAL (1000 * 1000)  //消息处理轮询时间（以微秒计算）
 #define MESSAGE_WAIT_INTERVAL (10 * 1000)    //消息不完整，等待消息完整的轮询时间（以微秒计算）
 
 #define SEND_BUILD_CONNECTION_HEADER 1
@@ -85,10 +85,12 @@ void *MessageProcessFunction(void *ptr) {
             total_length = ntohs(*((short *) buffer + 1));
             if((total_length + mess_buf.r_p + RECEIVE_DATA_HEADER_LENGTH) <= mess_buf.w_p) {  //数据字段完整
                 memcpy(per_buf, buffer + RECEIVE_DATA_HEADER_LENGTH, total_length);
+                debug("消息处理前 read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
                 mess_buf.r_p += total_length + RECEIVE_DATA_HEADER_LENGTH;
-                debug("MPF mess buf read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
+                debug("消息处理后 read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
                 pthread_mutex_unlock(&mess_buf_mutex);
                 MessageHandler(sign, total_length, per_buf);
+				sleep(1);
                 continue;
             } else {   //数据字段不完整
                 pthread_mutex_unlock(&mess_buf_mutex);
@@ -106,7 +108,7 @@ void *MessageProcessFunction(void *ptr) {
 void *BufferUpdateFunction(void *ptr) {
     while (1) {
         pthread_mutex_lock(&mess_buf_mutex);
-        debug("BUF mess buf read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
+        debug("更新缓冲区前 read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
         if(mess_buf.r_p != 0) {
             if(mess_buf.r_p == mess_buf.w_p) {
                 mess_buf.r_p = 0;
@@ -120,7 +122,7 @@ void *BufferUpdateFunction(void *ptr) {
                 mess_buf.w_p =buffer_size;
             }
         }
-        debug("BUF mess buf read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
+        debug("更新缓冲区后 read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
         pthread_mutex_unlock(&mess_buf_mutex);
         sleep(BUFFER_UPDATE_INTERVAL);
     }
@@ -138,8 +140,9 @@ void *ReceiveFunction(void *ptr) {
         if (n > 0) {
             pthread_mutex_lock(&mess_buf_mutex);
             memcpy(mess_buf.buffer, buffer, n);
+            debug("接收消息前read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
             mess_buf.w_p += n;
-            debug("RF mess buf read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
+            debug("接收消息后read point:%d, write point:%d\n", mess_buf.r_p, mess_buf.w_p);
             pthread_mutex_unlock(&mess_buf_mutex);
         } else if (n < 0) {
             int i = errno;
@@ -160,7 +163,7 @@ void InitThreads() {
         debug("初始化缓冲区读写锁失败！\n");
         exit(0);
     } else {
-        debug("初始化缓冲区读写锁成功！");
+        debug("初始化缓冲区读写锁成功！\n");
     }
 
     int ret;
